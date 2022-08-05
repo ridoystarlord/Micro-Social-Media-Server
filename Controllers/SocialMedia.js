@@ -4,6 +4,22 @@ const Users = require("../Models/Users");
 const Comment = require("../Models/Comment");
 const { hashSync, genSaltSync, compareSync } = require("bcrypt");
 
+const errorFormatter = (msg) => {
+  let errors = "";
+  const allerrors = msg
+    .substring(msg.indexOf(":") + 1)
+    .trim()
+    .split(",")
+    .map((e) => e.trim());
+
+  allerrors.forEach((element) => {
+    const [key, value] = element.split(":").map((er) => er.trim());
+    errors += value + ", ";
+  });
+
+  return errors;
+};
+
 const CreateNewPost = async (req, res) => {
   const postData = req.body;
   if (postData?._id === null) {
@@ -89,12 +105,20 @@ const RegisterNewUser = async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(500).json(error?.message);
+    res.status(500).json(errorFormatter(error?.message));
   }
 };
 const loginUser = async (req, res) => {
   const userData = req.body;
   const userInfo = new Users(userData);
+  if (!userInfo.email) {
+    res.status(400).json({ message: "Email is Required" });
+    return;
+  }
+  if (!userInfo.password) {
+    res.status(400).json({ message: "Password is Required" });
+    return;
+  }
   try {
     const user = await Users.find({ email: userInfo.email });
     const result = compareSync(userInfo.password, user[0].password);
@@ -114,6 +138,7 @@ const loginUser = async (req, res) => {
       res.status(401).json({ message: "Invalid Email and Password" });
     }
   } catch (error) {
+    console.log(error);
     res.status(500).json(error?.message);
   }
 };
